@@ -42,22 +42,16 @@ class Crucible:
         else:
             self.questions = await fetch_bulk_questions(subject=subject, topic=topic_slug, total_needed=self.total_qs)
 
-        # If ALOC returns 0 (topic might be weird), fallback to General
         if not self.questions:
-            await context.bot.send_message(self.chat_id, "⚠️ ALOC returned 0 questions for this topic. Falling back to General " + subject.title() + ".", parse_mode="HTML")
+            await context.bot.send_message(self.chat_id, "⚠️ No fresh questions found for this topic (14-day cooldown). Falling back to General.", parse_mode="HTML")
             self.questions = await fetch_bulk_questions(subject=subject, total_needed=self.total_qs)
             
         if not self.questions:
-            await context.bot.send_message(self.chat_id, "❌ ALOC API has no questions. Please try again later.")
+            await context.bot.send_message(self.chat_id, "❌ ALOC API has no fresh questions. Please try again later.")
             return await self.end_crucible(context)
 
         self.total_qs = len(self.questions)
-        
-        if self.total_qs < 100 and not self.is_test:
-            await context.bot.send_message(self.chat_id, "⚠️ <b>Note:</b> ALOC only has " + str(self.total_qs) + " questions. Running a " + str(self.total_qs) + "-question drill.", parse_mode="HTML")
-        else:
-            await context.bot.send_message(self.chat_id, "✅ " + str(self.total_qs) + " questions loaded. Starting in 3 seconds...")
-            
+        await context.bot.send_message(self.chat_id, "✅ " + str(self.total_qs) + " questions loaded. Starting in 3 seconds...")
         await asyncio.sleep(3)
         await self.send_next_poll(context)
 
@@ -66,30 +60,9 @@ class Crucible:
             return await self.end_crucible(context)
 
         q = self.questions[self.current_q]
-        
-        # Check for long options
-        option_lengths = [len(str(q["options"][k])) for k in ["A", "B", "C", "D"]]
-        has_long_option = any(length > 100 for length in option_lengths)
-        
-        if has_long_option:
-            full_text = "❓ *Q" + str(self.current_q + 1) + "/" + str(self.total_qs) + "*" + chr(10) + chr(10)
-            full_text += q['question'] + chr(10) + chr(10)
-            for k in ["A", "B", "C", "D"]:
-                full_text += "*" + k + ".* " + str(q['options'][k]) + chr(10)
-            await context.bot.send_message(self.chat_id, full_text[:4000], parse_mode="Markdown")
-            await asyncio.sleep(1)
-            options = ["Option A", "Option B", "Option C", "Option D"]
-        else:
-            options = [
-                str(q["options"]["A"])[:100],
-                str(q["options"]["B"])[:100],
-                str(q["options"]["C"])[:100],
-                str(q["options"]["D"])[:100]
-            ]
-            
+        options = [str(q["options"]["A"])[:100], str(q["options"]["B"])[:100], str(q["options"]["C"])[:100], str(q["options"]["D"])[:100]]
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
-        question_text = "Q" + str(self.current_q + 1) + "/" + str(self.total_qs) + ": " + q['question']
-        question_text = question_text[:300]
+        question_text = ("Q" + str(self.current_q + 1) + "/" + str(self.total_qs) + ": " + q['question'])[:300]
         
         self.q_start_time = datetime.datetime.now()
 
@@ -100,10 +73,9 @@ class Crucible:
                     await asyncio.sleep(1)
                 except: pass
 
-            ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
-            ai_explanation = ai_explanation[:195] 
+            ai_explanation = (await get_explanation_async(q['question'], q['correct'], q['options']))[:195]
 
-            # Attach Calculator to the Poll
+            # Attach Calculator Button
             calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
             calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
 
@@ -120,7 +92,7 @@ class Crucible:
                     reply_markup=calc_keyboard
                 )
             except Exception as e1:
-                print("⚠️ Poll failed with calculator: " + str(e1) + ". Retrying without...")
+                print(f"🚨 CALCULATOR BUTTON REJECTED BY TELEGRAM: {e1}")
                 msg = await context.bot.send_poll(
                     chat_id=self.chat_id,
                     question=question_text,
@@ -135,7 +107,6 @@ class Crucible:
             self.poll_id = msg.poll.id
         except Exception as e:
             logger.error("🚨 CRUCIAL POLL ERROR: " + str(e))
-            await context.bot.send_message(self.chat_id, "⚠️ Skipping Q" + str(self.current_q + 1) + " due to a Telegram error.")
             self.current_q += 1
             await asyncio.sleep(2)
             return await self.send_next_poll(context)
@@ -196,9 +167,7 @@ async def stop_crucible_command(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("⚠️ No active Crucible found in this chat.")
 
 async def set_topic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != admin_engine.ADMIN_ID:
-        return await update.message.reply_text("❌ Only the Arbiter can use this command.")
-
+    if update.effective_user.id != admin_engine.ADMIN_ID: return
     keyboard = [
         [InlineKeyboardButton("Physics", callback_data="wiz_sub_physics"), InlineKeyboardButton("Chemistry", callback_data="wiz_sub_chemistry")],
         [InlineKeyboardButton("Biology", callback_data="wiz_sub_biology"), InlineKeyboardButton("Math", callback_data="wiz_sub_mathematics")],
@@ -214,50 +183,38 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("wiz_sub_"):
         subject = data.replace("wiz_sub_", "")
         context.user_data['wiz_subject'] = subject
-        
         await query.edit_message_text("🔍 Fetching official " + subject.title() + " topics from ALOC...", parse_mode="HTML")
-        try:
-            api_topics = await fetch_topics(subject)
-            if not api_topics:
-                return await query.edit_message_text("❌ ALOC API returned 0 topics for " + subject + ".")
-            topics = [t.get('displayName', t.get('name')) for t in api_topics]
-        except Exception as e:
-            return await query.edit_message_text("❌ API Error: " + str(e))
+        
+        api_topics = await fetch_topics(subject)
+        if not api_topics: return await query.edit_message_text("❌ ALOC API returned 0 topics.")
+        topics = [t.get('displayName', t.get('name')) for t in api_topics]
 
         SUBJECT_TOPICS_CACHE[subject] = topics
         keyboard = [[InlineKeyboardButton("🎲 General (All)", callback_data="wiz_top_" + subject + "_-1")]]
         for i, t in enumerate(topics):
-            display = t[:60] + "..." if len(t) > 60 else t
-            keyboard.append([InlineKeyboardButton(display, callback_data="wiz_top_" + subject + "_" + str(i))])
+            keyboard.append([InlineKeyboardButton(t[:60], callback_data="wiz_top_" + subject + "_" + str(i))])
             
         await query.edit_message_text("Step 2: Select a topic for <b>" + subject.title() + "</b>", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
     elif data.startswith("wiz_top_"):
         parts = data.split("_")
-        subject = parts[2]
-        index = parts[3]
-        
+        subject, index = parts[2], parts[3]
         context.user_data['wiz_subject'] = subject
+        
         if index == "-1":
             context.user_data['wiz_topic_slug'] = "general"
             context.user_data['wiz_topic_name'] = "General (All Topics)"
         else:
-            topics = SUBJECT_TOPICS_CACHE.get(subject, [])
-            topic_name = topics[int(index)]
+            topic_name = SUBJECT_TOPICS_CACHE.get(subject, [])[int(index)]
             context.user_data['wiz_topic_name'] = topic_name
-            
             api_topics = await fetch_topics(subject)
-            real_slug = "general"
             for t in api_topics:
-                if t.get('displayName') == topic_name or t.get('name') == topic_name:
-                    real_slug = t.get('name')
-                    break
-            context.user_data['wiz_topic_slug'] = real_slug
+                if t.get('displayName') == topic_name: context.user_data['wiz_topic_slug'] = t.get('name'); break
 
         default_s = "30" if subject == "chemistry" else "25"
         keyboard = [
             [InlineKeyboardButton("15s", callback_data="wiz_time_15"), InlineKeyboardButton("20s", callback_data="wiz_time_20")],
-            [InlineKeyboardButton("25s", callback_data="wiz_time_25"), InlineKeyboardButton(default_s + "s (Recommended)", callback_data="wiz_time_" + default_s)],
+            [InlineKeyboardButton("25s", callback_data="wiz_time_25"), InlineKeyboardButton(default_s + "s (Rec)", callback_data="wiz_time_" + default_s)],
             [InlineKeyboardButton("40s", callback_data="wiz_time_40")]
         ]
         await query.edit_message_text("Subject: " + subject.title() + "\nTopic: " + context.user_data['wiz_topic_name'] + "\n\nStep 3: Select the timer:", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -265,12 +222,7 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("wiz_time_"):
         timer = int(data.replace("wiz_time_", ""))
         context.user_data['wiz_timer'] = timer
-        
-        keyboard = [
-            [InlineKeyboardButton("🚀 Start Now", callback_data="wiz_start_0")],
-            [InlineKeyboardButton("⏳ In 15 Mins", callback_data="wiz_start_15"), InlineKeyboardButton("⏳ In 30 Mins", callback_data="wiz_start_30")],
-            [InlineKeyboardButton("⏳ In 1 Hour", callback_data="wiz_start_60")]
-        ]
+        keyboard = [[InlineKeyboardButton("🚀 Start Now", callback_data="wiz_start_0")], [InlineKeyboardButton("⏳ In 15 Mins", callback_data="wiz_start_15"), InlineKeyboardButton("⏳ In 30 Mins", callback_data="wiz_start_30")]]
         await query.edit_message_text("Step 4: When should the Crucible start?", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data.startswith("wiz_start_"):
@@ -280,9 +232,6 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         slug = context.user_data.get('wiz_topic_slug', 'general')
         name = context.user_data.get('wiz_topic_name', 'General')
         
-        if not name or name == "None": name = "General"
-        if not slug or slug == "None": slug = "general"
-        
         db_manager.set_setting("current_subject", subj)
         db_manager.set_setting("current_topic", slug)
         db_manager.set_setting("current_topic_name", name)
@@ -291,82 +240,51 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lagos_tz = pytz.timezone('Africa/Lagos')
         start_time = datetime.datetime.now(lagos_tz) + datetime.timedelta(minutes=delay_mins)
         end_time = start_time + datetime.timedelta(seconds=100 * timer) 
-        start_str = start_time.strftime("%I:%M %p")
-        end_str = end_time.strftime("%I:%M %p")
         
         arena_id = db_manager.get_setting("arena_chat_id")
+        msg = f"🚨 <b>NEW CRUCIBLE CONFIGURED</b> 🚨\n\n📚 <b>Subject:</b> {subj.title()}\n🎯 <b>Topic:</b> {name}\n⏱️ <b>Timer:</b> {timer}s\n📝 <b>Qs:</b> 100\n\n🕒 <b>Starts:</b> {start_time.strftime('%I:%M %p')}\n🕒 <b>Ends:</b> {end_time.strftime('%I:%M %p')}\n\n<i>Get ready, Titans!</i>"
         
-        msg = (
-            f"🚨 <b>NEW CRUCIBLE CONFIGURED</b> 🚨\n\n"
-            f"📚 <b>Subject:</b> {subj.title()}\n"
-            f"🎯 <b>Topic:</b> {name}\n"
-            f"⏱️ <b>Timer:</b> {timer} seconds per question\n"
-            f"📝 <b>Questions:</b> 100\n\n"
-            f"🕒 <b>Starts:</b> {start_str}\n"
-            f"🕒 <b>Expected End:</b> {end_str}\n\n"
-            f"<i>Get ready, Titans! The Arena awaits your knowledge.</i>"
-        )
+        if not arena_id: return await query.edit_message_text("❌ Arena group not set!")
+        await context.bot.send_message(int(arena_id), msg, parse_mode="HTML")
         
-        if not arena_id:
-            return await query.edit_message_text("❌ <b>Error:</b> The Arena group is not set!\n\nPlease go to your group and type <code>/setarena</code> first.", parse_mode="HTML")
-            
-        try:
-            await context.bot.send_message(int(arena_id), msg, parse_mode="HTML")
-            
-            if delay_mins == 0:
-                await query.edit_message_text("✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n⚔️ The Crucible is starting right now!", parse_mode="HTML")
-                await asyncio.sleep(3)
+        if delay_mins == 0:
+            await query.edit_message_text("✅ Saved! Starting right now...", parse_mode="HTML")
+            ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
+            asyncio.create_task(ACTIVE_CRUCIBLE[int(arena_id)].start(context))
+        else:
+            await query.edit_message_text(f"✅ Saved! Will start at {start_time.strftime('%I:%M %p')}.", parse_mode="HTML")
+            async def delayed_start():
+                if delay_mins >= 10:
+                    await asyncio.sleep((delay_mins - 10) * 60)
+                    await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> Starts in 10 minutes!", parse_mode="HTML")
+                    await asyncio.sleep(5 * 60)
+                    await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> Starts in 5 minutes!", parse_mode="HTML")
+                    await asyncio.sleep(5 * 60)
+                else:
+                    await asyncio.sleep(delay_mins * 60)
+                await context.bot.send_message(int(arena_id), "🚨 <b>THE CRUCIBLE IS STARTING NOW!</b> 🚨", parse_mode="HTML")
                 ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
-                asyncio.create_task(ACTIVE_CRUCIBLE[int(arena_id)].start(context))
-            else:
-                await query.edit_message_text(f"✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n⏳ The Crucible will automatically start at {start_str}.", parse_mode="HTML")
-                
-                async def delayed_start_with_reminders():
-                    start_msg = f"🚨 <b>THE CRUCIBLE IS STARTING NOW!</b> 🚨\n\nSubject: {subj.title()}\nTopic: {name}\n\nGet ready!"
-                    
-                    if delay_mins >= 10:
-                        await asyncio.sleep((delay_mins - 10) * 60)
-                        await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> The {subj.title()} Crucible ({name}) starts in <b>10 minutes</b>!", parse_mode="HTML")
-                        
-                        await asyncio.sleep(5 * 60)
-                        await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> The {subj.title()} Crucible starts in <b>5 minutes</b>! Get your calculators ready.", parse_mode="HTML")
-                        
-                        await asyncio.sleep(5 * 60)
-                    else:
-                        await asyncio.sleep(delay_mins * 60)
-                        
-                    await context.bot.send_message(int(arena_id), start_msg, parse_mode="HTML")
-                    ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
-                    await ACTIVE_CRUCIBLE[int(arena_id)].start(context)
-                    
-                asyncio.create_task(delayed_start_with_reminders())
-                
-        except Exception as e:
-            await query.edit_message_text(f"❌ <b>Failed to send message to the group.</b>\nError: {e}", parse_mode="HTML")
+                await ACTIVE_CRUCIBLE[int(arena_id)].start(context)
+            asyncio.create_task(delayed_start())
 
 async def set_general_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_manager.set_setting("current_subject", "physics")
     db_manager.set_setting("current_topic", "general")
     db_manager.set_setting("current_topic_name", "General")
-    db_manager.set_setting("crucible_timer", "25")
-    await update.message.reply_text("✅ Topic cleared. Bot will fetch random questions.", parse_mode="HTML")
+    await update.message.reply_text("✅ Topic cleared.")
 
 async def test_crucible(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=True)
-    asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
+    ACTIVE_CRUCIBLE[update.effective_chat.id] = Crucible(update.effective_chat.id, is_test=True)
+    asyncio.create_task(ACTIVE_CRUCIBLE[update.effective_chat.id].start(context))
 
 async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != admin_engine.ADMIN_ID: return
     chat_id = update.effective_chat.id
-    if chat_id in ACTIVE_CRUCIBLE:
-        return await update.message.reply_text("⚠️ A Crucible is already running here.")
+    if chat_id in ACTIVE_CRUCIBLE: return await update.message.reply_text("⚠️ Already running!")
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
 
 async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    answer = update.poll_answer
     for crucible in ACTIVE_CRUCIBLE.values():
-        if crucible.poll_id == answer.poll_id:
-            await crucible.handle_answer(answer)
-            break
+        if crucible.poll_id == update.poll_answer.poll_id:
+            await crucible.handle_answer(update.poll_answer); break
