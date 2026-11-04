@@ -272,12 +272,30 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Schedule it
                 await query.edit_message_text(f"✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n⏳ The Crucible will automatically start at {start_str}.", parse_mode="HTML")
                 
-                async def delayed_start():
-                    await asyncio.sleep(delay_mins * 60)
+                async def delayed_start_with_reminders():
+                    start_msg = f"🚨 <b>THE CRUCIBLE IS STARTING NOW!</b> 🚨\n\nSubject: {subj.title()}\nTopic: {name}\n\nGet ready!"
+                    
+                    if delay_mins >= 10:
+                        # Wait until 10 mins before start
+                        await asyncio.sleep((delay_mins - 10) * 60)
+                        await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> The {subj.title()} Crucible ({name}) starts in <b>10 minutes</b>!", parse_mode="HTML")
+                        
+                        # Wait 5 mins (now 5 mins before start)
+                        await asyncio.sleep(5 * 60)
+                        await context.bot.send_message(int(arena_id), f"⏳ <b>REMINDER:</b> The {subj.title()} Crucible starts in <b>5 minutes</b>! Get your calculators ready.", parse_mode="HTML")
+                        
+                        # Wait the final 5 mins
+                        await asyncio.sleep(5 * 60)
+                    else:
+                        # If scheduled for less than 10 mins, just wait the remaining time
+                        await asyncio.sleep(delay_mins * 60)
+                        
+                    # Send Start Message and Launch
+                    await context.bot.send_message(int(arena_id), start_msg, parse_mode="HTML")
                     ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
                     await ACTIVE_CRUCIBLE[int(arena_id)].start(context)
                     
-                asyncio.create_task(delayed_start())
+                asyncio.create_task(delayed_start_with_reminders())
                 
         except Exception as e:
             await query.edit_message_text(f"❌ <b>Failed to send message to the group.</b>\nError: {e}", parse_mode="HTML")
