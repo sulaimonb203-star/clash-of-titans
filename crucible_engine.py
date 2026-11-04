@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import datetime
-import json
 import pytz
 from telegram import Update, Poll, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ContextTypes
@@ -34,7 +33,7 @@ class Crucible:
         topic_name = db_manager.get_setting("current_topic_name") or "General"
 
         title = "🧪 *TEST CRUCIBLE* 🧪" if self.is_test else "🔥 *THE CRUCIBLE HAS BEGUN!* 🔥"
-        msg = f"{title}{chr(10)}{chr(10)}Subject: {subject.title()}{chr(10)}Topic: {topic_name}{chr(10)}Timer: {self.timer}s{chr(10)}Forging {self.total_qs} questions..."
+        msg = title + chr(10) + chr(10) + "Subject: " + subject.title() + chr(10) + "Topic: " + topic_name + chr(10) + "Timer: " + str(self.timer) + "s" + chr(10) + "Forging " + str(self.total_qs) + " questions..."
         await context.bot.send_message(self.chat_id, msg, parse_mode="Markdown")
 
         if self.is_test:
@@ -43,9 +42,9 @@ class Crucible:
         else:
             self.questions = await fetch_bulk_questions(subject=subject, topic=topic_slug, total_needed=self.total_qs)
 
+        # If ALOC returns 0 (topic might be weird), fallback to General
         if not self.questions:
-            print(f"⚠️ ALOC returned 0 questions for {topic_slug}. Falling back to General {subject}.")
-            await context.bot.send_message(self.chat_id, f"⚠️ ALOC has 0 questions for this topic. Falling back to General {subject.title()} questions.", parse_mode="HTML")
+            await context.bot.send_message(self.chat_id, "⚠️ ALOC returned 0 questions for this topic. Falling back to General " + subject.title() + ".", parse_mode="HTML")
             self.questions = await fetch_bulk_questions(subject=subject, total_needed=self.total_qs)
             
         if not self.questions:
@@ -55,9 +54,9 @@ class Crucible:
         self.total_qs = len(self.questions)
         
         if self.total_qs < 100 and not self.is_test:
-            await context.bot.send_message(self.chat_id, f"⚠️ <b>Note:</b> ALOC only has {self.total_qs} questions for this exact topic. Running a {self.total_qs}-question drill.", parse_mode="HTML")
+            await context.bot.send_message(self.chat_id, "⚠️ <b>Note:</b> ALOC only has " + str(self.total_qs) + " questions. Running a " + str(self.total_qs) + "-question drill.", parse_mode="HTML")
         else:
-            await context.bot.send_message(self.chat_id, f"✅ {self.total_qs} questions loaded. Starting in 3 seconds...")
+            await context.bot.send_message(self.chat_id, "✅ " + str(self.total_qs) + " questions loaded. Starting in 3 seconds...")
             
         await asyncio.sleep(3)
         await self.send_next_poll(context)
@@ -73,12 +72,10 @@ class Crucible:
         has_long_option = any(length > 100 for length in option_lengths)
         
         if has_long_option:
-            # Build text message safely
             full_text = "❓ *Q" + str(self.current_q + 1) + "/" + str(self.total_qs) + "*" + chr(10) + chr(10)
             full_text += q['question'] + chr(10) + chr(10)
             for k in ["A", "B", "C", "D"]:
                 full_text += "*" + k + ".* " + str(q['options'][k]) + chr(10)
-                
             await context.bot.send_message(self.chat_id, full_text[:4000], parse_mode="Markdown")
             await asyncio.sleep(1)
             options = ["Option A", "Option B", "Option C", "Option D"]
@@ -91,7 +88,6 @@ class Crucible:
             ]
             
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
-        
         question_text = "Q" + str(self.current_q + 1) + "/" + str(self.total_qs) + ": " + q['question']
         question_text = question_text[:300]
         
@@ -107,6 +103,7 @@ class Crucible:
             ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
             ai_explanation = ai_explanation[:195] 
 
+            # Attach Calculator to the Poll
             calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
             calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
 
@@ -249,7 +246,6 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             topic_name = topics[int(index)]
             context.user_data['wiz_topic_name'] = topic_name
             
-            # Get the exact slug from the API
             api_topics = await fetch_topics(subject)
             real_slug = "general"
             for t in api_topics:
@@ -360,13 +356,6 @@ async def test_crucible(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=True)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
 
-async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    answer = update.poll_answer
-    for crucible in ACTIVE_CRUCIBLE.values():
-        if crucible.poll_id == answer.poll_id:
-            await crucible.handle_answer(answer)
-            break
-
 async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != admin_engine.ADMIN_ID: return
     chat_id = update.effective_chat.id
@@ -374,3 +363,10 @@ async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return await update.message.reply_text("⚠️ A Crucible is already running here.")
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
+
+async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    answer = update.poll_answer
+    for crucible in ACTIVE_CRUCIBLE.values():
+        if crucible.poll_id == answer.poll_id:
+            await crucible.handle_answer(answer)
+            break
