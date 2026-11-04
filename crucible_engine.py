@@ -366,3 +366,11 @@ async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_T
         if crucible.poll_id == answer.poll_id:
             await crucible.handle_answer(answer)
             break
+
+async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != admin_engine.ADMIN_ID: return
+    chat_id = update.effective_chat.id
+    if chat_id in ACTIVE_CRUCIBLE:
+        return await update.message.reply_text("⚠️ A Crucible is already running here.")
+    ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
+    asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
