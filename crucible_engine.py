@@ -2,16 +2,18 @@ import asyncio
 import logging
 import datetime
 import json
-from telegram import Update, Poll, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, Poll, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ContextTypes
 from aloc_manager import fetch_questions, fetch_bulk_questions
 import db_manager
 import telegram_rich
 import admin_engine
+from ai_engine import get_explanation_async
 
 logger = logging.getLogger(__name__)
 ACTIVE_CRUCIBLE = {}
 SUBJECT_TOPICS_CACHE = {}
+CALCULATOR_URL = "https://web-production-038a36.up.railway.app/calculator"
 
 class Crucible:
     def __init__(self, chat_id, is_test=False):
@@ -20,7 +22,6 @@ class Crucible:
         self.total_qs = 3 if is_test else 100
         self.questions = []
         self.current_q = 0
-        self.active_q_index = 0 # BUG FIX: Track the exact question being answered
         self.poll_id = None
         self.stats = {}
         self.q_start_time = None
@@ -35,23 +36,25 @@ class Crucible:
         msg = f"{title}{chr(10)}{chr(10)}Subject: {subject.title()}{chr(10)}Topic: {topic_name}{chr(10)}Timer: {self.timer}s{chr(10)}Forging {self.total_qs} questions..."
         await context.bot.send_message(self.chat_id, msg, parse_mode="Markdown")
 
-        # Fetch questions
+        # Fetch questions using STRICT topic pagination
         if self.is_test:
-            self.questions = await fetch_questions(subject=subject, topic=topic_slug, limit=self.total_qs)
-            if not self.questions:
-                self.questions = await fetch_questions(subject=subject, limit=self.total_qs)
+            qs_list, _ = await fetch_questions(subject=subject, topic=topic_slug, limit=self.total_qs)
+            self.questions = qs_list
         else:
             self.questions = await fetch_bulk_questions(subject=subject, topic=topic_slug, total_needed=self.total_qs)
-            if not self.questions:
-                print(f"⚠️ Bulk API failed for topic '{topic_slug}'. Falling back to general {subject}.")
-                self.questions = await fetch_bulk_questions(subject=subject, total_needed=self.total_qs)
 
         if not self.questions:
-            await context.bot.send_message(self.chat_id, "❌ Failed to load questions. Check Railway logs.")
+            await context.bot.send_message(self.chat_id, "❌ Failed to load questions. ALOC has 0 questions for this topic.")
             return await self.end_crucible(context)
 
         self.total_qs = len(self.questions)
-        await context.bot.send_message(self.chat_id, f"✅ {self.total_qs} questions loaded. Starting in 3 seconds...")
+        
+        # Warn if ALOC didn't have exactly 100 (prevents silent fallback)
+        if self.total_qs < 100 and not self.is_test:
+            await context.bot.send_message(self.chat_id, f"⚠️ <b>Note:</b> ALOC only has {self.total_qs} questions for this exact topic. Running a {self.total_qs}-question drill.", parse_mode="HTML")
+        else:
+            await context.bot.send_message(self.chat_id, f"✅ {self.total_qs} questions loaded. Starting in 3 seconds...")
+            
         await asyncio.sleep(3)
         await self.send_next_poll(context)
 
@@ -59,7 +62,6 @@ class Crucible:
         if self.current_q >= self.total_qs:
             return await self.end_crucible(context)
 
-        self.active_q_index = self.current_q # Lock the index for this question
         q = self.questions[self.current_q]
         options = [q["options"]["A"], q["options"]["B"], q["options"]["C"], q["options"]["D"]]
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
@@ -73,6 +75,13 @@ class Crucible:
                     await asyncio.sleep(1)
                 except: pass
 
+            # 1. ADD CALCULATOR BUTTON
+            calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
+            calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
+
+            # 2. ADD AI EXPLANATION (BULB ICON)
+            ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
+
             msg = await context.bot.send_poll(
                 chat_id=self.chat_id,
                 question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
@@ -81,11 +90,12 @@ class Crucible:
                 correct_option_id=correct_idx,
                 is_anonymous=False,
                 open_period=self.timer,
-                explanation=f"The correct answer is {q['correct']}."
+                explanation=ai_explanation, # This creates the bulb icon & pop-up!
+                reply_markup=calc_keyboard
             )
             self.poll_id = msg.poll.id
         except Exception as e:
-            logger.error(f"Network error: {e}")
+            logger.error(f"Crucible error: {e}")
             await asyncio.sleep(3)
             return await self.send_next_poll(context)
 
@@ -104,10 +114,8 @@ class Crucible:
         self.stats[user_id]['answered'] += 1
         self.stats[user_id]['total_time'] += time_taken
 
-        # BUG FIX: Use active_q_index instead of current_q
-        q = self.questions[self.active_q_index]
+        q = self.questions[self.current_q]
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
-        
         if answer.option_ids[0] == correct_idx:
             self.stats[user_id]['score'] += 1
 
@@ -250,8 +258,6 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"Make sure I am an Admin in the group.\nError: {e}",
                 parse_mode="HTML"
             )
-        
-        # NO AUTO-START. The Admin must use /startcrucible.
 
 async def set_general_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_manager.set_setting("current_subject", "physics")
@@ -265,13 +271,6 @@ async def test_crucible(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=True)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
 
-async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    answer = update.poll_answer
-    for crucible in ACTIVE_CRUCIBLE.values():
-        if crucible.poll_id == answer.poll_id:
-            await crucible.handle_answer(answer)
-            break
-
 async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != admin_engine.ADMIN_ID: return
     chat_id = update.effective_chat.id
@@ -279,3 +278,10 @@ async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return await update.message.reply_text("⚠️ A Crucible is already running here.")
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
+
+async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    answer = update.poll_answer
+    for crucible in ACTIVE_CRUCIBLE.values():
+        if crucible.poll_id == answer.poll_id:
+            await crucible.handle_answer(answer)
+            break
