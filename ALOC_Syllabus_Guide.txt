@@ -1,0 +1,552 @@
+
+==================================================
+📚 ENGLISH SYLLABUS
+==================================================
+
+📌 Vocabulary (980 questions)
+   ↳ Spelling correct incorrect
+   ↳ Degree comparison
+   ↳ Idioms phrasal verbs
+   ↳ Homophones
+   ↳ Synonyms antonyms
+   ↳ Contextual meaning
+
+📌 Oral english (195 questions)
+   ↳ Stress intonation
+   ↳ Connected speech
+   ↳ Emphatic stress
+   ↳ Vowel sounds
+   ↳ Question tags
+   ↳ Consonant sounds
+   ↳ Rhyme rhythm
+   ↳ Word stress polysyllabic
+
+📌 Prose (70 questions)
+   ↳ Theme analysis
+   ↳ Characterisation
+
+📌 Comprehension (266 questions)
+   ↳ Cloze test
+   ↳ Writers intention mood attitude opinion
+   ↳ Narration
+   ↳ Implied meaning
+   ↳ Approved reading text
+   ↳ Main points topic sentences
+   ↳ Vocabulary in context
+   ↳ Reading comprehension
+   ↳ Synthesis of ideas
+
+📌 Grammar (271 questions)
+   ↳ Contextual meaning
+   ↳ Agreement
+   ↳ Prepositions
+   ↳ Clause analysis
+   ↳ Number
+   ↳ Word classes and functions
+   ↳ Sentence structure
+   ↳ Degree comparison
+   ↳ Mood
+   ↳ Question tags
+   ↳ Parts of speech
+   ↳ Tenses aspect
+   ↳ Punctuation
+
+📌 Poetry (3 questions)
+
+📌 Writing (2 questions)
+   ↳ Essay writing
+   ↳ Report writing
+
+📌 Argumentation persuasion (1 questions)
+   ↳ Writers intention mood attitude opinion
+
+📌 National issues (1 questions)
+
+📌 Drama (6 questions)
+
+📌 Physical geography (1 questions)
+
+📌 Nigerian government (2 questions)
+
+
+==================================================
+📚 MATHEMATICS SYLLABUS
+==================================================
+
+📌 Trigonometry (46 questions)
+   ↳ Sine cosine tangent
+   ↳ Identities
+   ↳ Graphs of trig
+   ↳ Bearings elevations
+
+📌 Statistics (208 questions)
+   ↳ Histograms
+   ↳ Mean median mode
+   ↳ Percentage error
+   ↳ Percentage
+   ↳ Median
+   ↳ Mean
+   ↳ Variance standard deviation
+   ↳ Cumulative frequency
+   ↳ Percentiles
+   ↳ Variance
+   ↳ Mean deviation
+   ↳ Mean standard deviation
+   ↳ Mode
+   ↳ Standard deviation
+   ↳ Pie charts
+   ↳ Probability
+   ↳ Range
+   ↳ Frequency distribution
+
+📌 Algebra (460 questions)
+   ↳ Binary operations
+   ↳ Absolute value equations
+   ↳ Binomial coefficients
+   ↳ Determinants
+   ↳ Variations
+   ↳ Simultaneous equations
+   ↳ Quadratic equations
+   ↳ Inequalities
+   ↳ Combinations
+   ↳ Indices logarithms
+   ↳ Factor remainder theorem
+   ↳ Variation
+   ↳ Equations
+   ↳ Fractions decimals
+   ↳ Sets
+   ↳ Surds
+   ↳ Matrices
+   ↳ Inverse proportions
+   ↳ Change of subject formula
+   ↳ Functions
+   ↳ Polynomials
+   ↳ Sequences series
+   ↳ Linear equations
+   ↳ Partial fractions
+   ↳ Simplifying expressions
+
+📌 Geometry (291 questions)
+   ↳ Distance
+   ↳ Cyclic quadrilaterals
+   ↳ Circles
+   ↳ Bearings elevations
+   ↳ Mensuration
+   ↳ Polygons
+   ↳ Coordinate geometry
+   ↳ Triangles
+   ↳ Longitudes latitudes
+   ↳ Angles properties lines
+   ↳ Angle properties lines
+   ↳ Vectors 2d
+   ↳ Angles
+   ↳ Circumference areas volumes
+   ↳ Inequalities
+   ↳ Lines
+   ↳ Loci
+   ↳ Surface areas volumes
+
+📌 Calculus (136 questions)
+   ↳ Limits
+   ↳ Integration
+   ↳ Differentiation
+   ↳ Indices logarithms
+   ↳ Maxima minima
+   ↳ Rates of change
+
+📌 Further topics (22 questions)
+   ↳ Binomial theorem
+   ↳ Combinations
+   ↳ Permutations combinations
+
+📌 Number theory (179 questions)
+   ↳ Percentage profit loss
+   ↳ Profit loss
+   ↳ Sets
+   ↳ Significant figures
+   ↳ Percentage error
+   ↳ Fractions decimals
+   ↳ Percentage
+   ↳ Combinations
+   ↳ Hcf lcm
+   ↳ Percentages
+   ↳ Simple interest
+   ↳ Probability
+   ↳ Ratio proportion
+   ↳ Decimal places
+   ↳ Variation
+   ↳ Number bases
+
+📌 Determinants (1 questions)
+
+📌 Mechanics (3 questions)
+   ↳ Forces
+   ↳ Work energy
+   ↳ Motion
+
+📌 Binary operations (4 questions)
+   ↳ Variation
+
+📌 Sets (3 questions)
+   ↳ Union
+   ↳ Venn diagrams
+
+📌 Matrices (1 questions)
+   ↳ Determinants
+
+📌 Algebra further (23 questions)
+   ↳ Permutations combinations
+
+
+==================================================
+📚 PHYSICS SYLLABUS
+==================================================
+
+📌 Electricity (238 questions)
+   ↳ Electrical energy power
+   ↳ Electric field
+   ↳ Conductors
+   ↳ Circuits
+   ↳ Force on current carrying conductor
+   ↳ Ac circuits
+   ↳ Electrolysis
+   ↳ Current voltage resistance
+   ↳ Gas laws thermal
+   ↳ Conduction through liquids gases
+   ↳ Conductivity
+   ↳ Electrostatics
+   ↳ Electric cells
+   ↳ Inductors
+   ↳ Electromagnetic induction
+   ↳ Magnetism magnetic fields
+   ↳ Electric energy power
+   ↳ Transformers
+   ↳ Capacitors
+
+📌 Gravitation (7 questions)
+   ↳ Escape velocity
+   ↳ Forces newtons laws
+   ↳ Gravitational field intensity
+   ↳ Gravity
+
+📌 Modern physics (118 questions)
+   ↳ Photoelectric effect
+   ↳ Atomic models energy levels
+   ↳ X rays
+   ↳ Magnetism magnetic fields
+   ↳ Nuclear physics
+   ↳ Kinetic theory of matter
+   ↳ Wave particle duality
+   ↳ Electrons thermoionic emission
+   ↳ Radioactivity
+   ↳ Electronics semiconductors
+
+📌 Waves (232 questions)
+   ↳ Sound
+   ↳ Dispersion and colour
+   ↳ Light refraction
+   ↳ Optical instruments
+   ↳ Wave properties
+   ↳ Electromagnetic spectrum
+   ↳ Fibre optics lasers
+   ↳ Light reflection
+   ↳ Simple harmonic motion
+
+📌 Measurement (81 questions)
+   ↳ Si units
+   ↳ Scalars vectors
+   ↳ Pressure
+   ↳ Uncertainty
+   ↳ Density relative density upthrust
+   ↳ Dimensions
+
+📌 States of matter (19 questions)
+
+📌 Mechanics (286 questions)
+   ↳ Density relative density upthrust
+   ↳ Elasticity hookes law
+   ↳ Equilibrium of forces moments
+   ↳ Friction viscosity
+   ↳ Buoyancy
+   ↳ Gravitational
+   ↳ Simple machines
+   ↳ Simple harmonic motion
+   ↳ Projectiles
+   ↳ Gravitation
+   ↳ Motion
+   ↳ Newtons laws
+   ↳ Floatation
+   ↳ Work energy power
+   ↳ Vibrations and resonance
+   ↳ Momentum
+   ↳ Circular motion
+   ↳ Forces newtons laws
+   ↳ Pressure
+
+📌 Heat (198 questions)
+   ↳ Calorimetry
+   ↳ Thermal conductivity
+   ↳ Viscosity
+   ↳ Viscocity
+   ↳ Thermal expansion
+   ↳ Heat transfer
+   ↳ Temperature
+   ↳ Heat capacity
+   ↳ Vapours humidity
+   ↳ Change of state latent heat
+   ↳ Kinetic theory of matter
+   ↳ Gas laws thermal
+   ↳ Latent heat
+
+📌 Geometry (1 questions)
+
+📌 Simple machines (1 questions)
+   ↳ Mechanics
+
+📌 Energetics (2 questions)
+
+📌 Optics (1 questions)
+   ↳ Concave mirrors
+
+📌 Atomic structure (7 questions)
+   ↳ Chemical bonding
+
+📌 Inorganic chemistry (5 questions)
+   ↳ Electrolysis
+
+
+==================================================
+📚 CHEMISTRY SYLLABUS
+==================================================
+
+📌 Inorganic chemistry (403 questions)
+   ↳ Metals
+   ↳ Chemical industries
+   ↳ Elements compounds mixtures
+   ↳ Transition metals
+   ↳ Noble gases
+   ↳ Hard and soft water
+   ↳ Salts
+   ↳ Alloys
+   ↳ Electrochemical cells
+   ↳ Allotropes
+   ↳ Gases
+   ↳ Non metals
+   ↳ Ph and poh
+   ↳ Hydrolysis of salts
+   ↳ Corrosion
+   ↳ Oxidation reduction
+   ↳ Electrolysis
+   ↳ Physical and chemical changes
+   ↳ Acids bases salts
+   ↳ Solubility
+
+📌 Energetics (106 questions)
+   ↳ Entropy
+   ↳ Equilibrium
+   ↳ Thermochemistry
+   ↳ Enthalpy
+   ↳ Activation energy
+   ↳ Reaction rates
+   ↳ Spontaneity of reactions
+   ↳ Electrochemical cells
+
+📌 Organic chemistry (231 questions)
+   ↳ Carbohydrates
+   ↳ Alkanals alkanals alkanones
+   ↳ Alkynes
+   ↳ Alkanes alkenes alkynes
+   ↳ Alkanols alkanals alkanones
+   ↳ Hybridization
+   ↳ Amines
+   ↳ Functional groups
+   ↳ Isomerism
+   ↳ Polymers
+   ↳ Proteins
+   ↳ Alkanoic acids and alkanoates
+   ↳ Alkenes
+   ↳ Aromatic hydrocarbons
+   ↳ Catenation
+   ↳ Reactions of organics
+   ↳ Elements compounds mixtures
+   ↳ Solubility
+   ↳ Alkenes alkynes
+   ↳ Alkanals alkanones alkanals
+
+📌 Stoichiometry (76 questions)
+   ↳ Percentage composition
+   ↳ Balancing equations
+   ↳ Limiting reagent
+   ↳ Mole concept
+
+📌 Chemical bonding (14 questions)
+   ↳ Hydrogen bonding
+   ↳ Covalent bond formation
+   ↳ Ionic
+   ↳ Molecular shapes
+   ↳ Coordination compounds
+   ↳ Ionic bonding
+
+📌 Atomic structure (112 questions)
+   ↳ Molecular shapes
+   ↳ Atomic models
+   ↳ Ionization energy
+   ↳ Atoms
+   ↳ Electron configuration
+   ↳ Periodic table
+   ↳ Isotopes
+   ↳ Chemical bonding
+   ↳ Quantum numbers
+
+📌 States of matter (128 questions)
+   ↳ Solutions
+   ↳ Colloids
+   ↳ Freezing point
+   ↳ Sublimation
+   ↳ Kinetic theory of matter
+   ↳ Physical and chemical changes
+   ↳ Solubility
+   ↳ Gas laws
+
+📌 Nuclear chemistry (13 questions)
+   ↳ Nuclear stability
+   ↳ Nuclear models
+   ↳ Nuclear fission and fusion
+   ↳ Half life
+   ↳ Radioactivity
+
+📌 Chemistry and industry (15 questions)
+   ↳ Raw materials
+   ↳ Chemical industries
+
+📌 Separation and purification (39 questions)
+   ↳ Criteria of purity
+   ↳ Elements compounds mixtures
+   ↳ Physical and chemical changes
+   ↳ Separation techniques
+
+📌 Environmental chemistry (43 questions)
+   ↳ Soil pollution
+   ↳ Water pollution
+   ↳ Pollution
+   ↳ Air pollution
+   ↳ Hard and soft water
+
+📌 Modern physics (4 questions)
+
+
+==================================================
+📚 BIOLOGY SYLLABUS
+==================================================
+
+📌 Soil science (3 questions)
+   ↳ Nigerian biomes
+   ↳ Pollution and control
+
+📌 Biochemistry (1 questions)
+   ↳ Enzymes
+
+📌 Cell biology (16 questions)
+   ↳ Cell components and functions
+   ↳ Cell structure
+   ↳ Cell transport
+   ↳ Chromosomes
+   ↳ Levels of organization
+   ↳ Osmosis diffusion
+
+📌 Ecology (92 questions)
+   ↳ Abiotic biotic factors
+   ↳ Adaptation
+   ↳ Conservation
+   ↳ Ecological succession
+   ↳ Ecosystem
+   ↳ Food chains
+   ↳ Levels of organization
+   ↳ Natural habitats
+   ↳ Nigerian biomes
+   ↳ Nutrient cycling
+   ↳ Pollution and control
+   ↳ Population
+   ↳ Soil science
+   ↳ Symbiotic interactions
+
+📌 Genetics (60 questions)
+   ↳ Biotechnology
+   ↳ Blood groups
+   ↳ Chromosomes
+   ↳ Dna rna
+   ↳ Dominant trait
+   ↳ Evolution
+   ↳ Heredity
+   ↳ Mendelian genetics
+   ↳ Mutations
+   ↳ Probability and sex determination
+   ↳ Sex linked characters
+   ↳ Variation continuous discontinuous
+
+📌 Human biology (55 questions)
+   ↳ Blood groups
+   ↳ Cell components and functions
+   ↳ Circulatory system
+   ↳ Coordination and control
+   ↳ Digestive system
+   ↳ Endocrine system
+   ↳ Excretory system
+   ↳ Homeostasis
+   ↳ Nervous system
+   ↳ Nutrition and food classes
+   ↳ Reproductive system
+   ↳ Respiratory system
+   ↳ Sense organs
+   ↳ Skin and its functions
+
+📌 Microbiology (18 questions)
+   ↳ Bacteria
+   ↳ Common and endemic diseases
+   ↳ Disease transmission
+   ↳ Fungi
+   ↳ Protista
+   ↳ Viruses
+
+📌 Plant biology (59 questions)
+   ↳ Adaptation
+   ↳ Classification of plants
+   ↳ Germination
+   ↳ Growth and germination
+   ↳ Nutrition and food classes
+   ↳ Photosynthesis
+   ↳ Plant hormones
+   ↳ Plant nutrition
+   ↳ Plant tissues and support
+   ↳ Plant vascular system
+   ↳ Pollination and fertilization
+   ↳ Reproduction in plants
+   ↳ Supporting tissues in plants
+   ↳ Transpiration
+   ↳ Tropic tactic nastic movements
+   ↳ Vegetative propagation
+
+📌 Reproduction (2 questions)
+   ↳ Reproduction in mammals
+
+📌 Respiration (8 questions)
+   ↳ Aerobic respiration
+   ↳ Anaerobic respiration
+   ↳ Gaseous exchange
+   ↳ Respiratory organs and surfaces
+
+📌 Support and movement (4 questions)
+   ↳ Skeleton types and functions
+   ↳ Supporting tissues in plants
+
+📌 Transport in organisms (4 questions)
+   ↳ Mammalian circulatory system
+   ↳ Transport media and mechanisms
+
+📌 Variety of organisms (61 questions)
+   ↳ Asexual reproduction
+   ↳ Characteristics of living things
+   ↳ Classification monera protista fungi plantae animalia
+   ↳ Invertebrates
+   ↳ Structural functional behavioural adaptations
+   ↳ Vertebrates
