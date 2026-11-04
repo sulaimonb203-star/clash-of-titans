@@ -230,16 +230,26 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"<i>Get ready, Titans! The Arena awaits your knowledge.</i>"
         )
         
-        if arena_id:
-            try:
-                await context.bot.send_message(int(arena_id), msg, parse_mode="HTML")
-            except: pass
+        if not arena_id:
+            return await query.edit_message_text(
+                "❌ <b>Error:</b> The Arena group is not set!\n\n"
+                "Please go to your group and type <code>/setarena</code> first, then run <code>/settopic</code> again.",
+                parse_mode="HTML"
+            )
             
-        await query.edit_message_text(
-            f"✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n"
-            f"⚔️ When you and your opponent are ready, type <code>/startcrucible</code> to begin!",
-            parse_mode="HTML"
-        )
+        try:
+            await context.bot.send_message(int(arena_id), msg, parse_mode="HTML")
+            await query.edit_message_text(
+                f"✅ <b>Configuration Saved!</b>\n\nThe bot has successfully notified the Arena.\n\n"
+                f"⚔️ When you and your opponent are ready, type <code>/startcrucible</code> in the group to begin!",
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            await query.edit_message_text(
+                f"❌ <b>Failed to send message to the group.</b>\n"
+                f"Make sure I am an Admin in the group.\nError: {e}",
+                parse_mode="HTML"
+            )
         
         # NO AUTO-START. The Admin must use /startcrucible.
 
