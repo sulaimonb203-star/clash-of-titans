@@ -273,9 +273,15 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("wiz_start_"):
         delay_mins = int(data.replace("wiz_start_", ""))
         timer = context.user_data.get('wiz_timer', 25)
-        subj = context.user_data.get('wiz_subject')
-        slug = context.user_data.get('wiz_topic_slug')
-        name = context.user_data.get('wiz_topic_name')
+        subj = context.user_data.get('wiz_subject', 'chemistry')
+        slug = context.user_data.get('wiz_topic_slug', 'general')
+        name = context.user_data.get('wiz_topic_name', 'General')
+        
+        # FIX: If Railway restarted and memory was wiped, default to General
+        if not name or name == "None":
+            name = "General"
+        if not slug or slug == "None":
+            slug = "general"
         
         db_manager.set_setting("current_subject", subj)
         db_manager.set_setting("current_topic", slug)
