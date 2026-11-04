@@ -83,21 +83,40 @@ class Crucible:
             calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
             ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
 
-            msg = await context.bot.send_poll(
-                chat_id=self.chat_id,
-                question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
-                options=options,
-                type=Poll.QUIZ,
-                correct_option_id=correct_idx,
-                is_anonymous=False,
-                open_period=self.timer,
-                explanation=ai_explanation,
-                reply_markup=calc_keyboard
-            )
+            # Attempt 1: Send with AI Explanation and Calculator
+            try:
+                msg = await context.bot.send_poll(
+                    chat_id=self.chat_id,
+                    question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
+                    options=options,
+                    type=Poll.QUIZ,
+                    correct_option_id=correct_idx,
+                    is_anonymous=False,
+                    open_period=self.timer,
+                    explanation=ai_explanation,
+                    reply_markup=calc_keyboard
+                )
+            except Exception as e1:
+                logger.error(f"Poll failed with explanation: {e1}")
+                # Attempt 2: Send without explanation (in case it was too long)
+                msg = await context.bot.send_poll(
+                    chat_id=self.chat_id,
+                    question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
+                    options=options,
+                    type=Poll.QUIZ,
+                    correct_option_id=correct_idx,
+                    is_anonymous=False,
+                    open_period=self.timer,
+                    reply_markup=calc_keyboard
+                )
+
             self.poll_id = msg.poll.id
+            
         except Exception as e:
-            logger.error(f"Crucible error: {e}")
-            await asyncio.sleep(3)
+            logger.error(f"Crucible completely failed on Q{self.current_q + 1}: {e}")
+            await context.bot.send_message(self.chat_id, f"⚠️ Skipping Q{self.current_q + 1} due to a Telegram error.")
+            self.current_q += 1
+            await asyncio.sleep(2)
             return await self.send_next_poll(context)
 
         await asyncio.sleep(self.timer)
