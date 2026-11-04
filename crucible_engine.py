@@ -67,8 +67,19 @@ class Crucible:
             return await self.end_crucible(context)
 
         q = self.questions[self.current_q]
-        options = [q["options"]["A"], q["options"]["B"], q["options"]["C"], q["options"]["D"]]
+        
+        # 1. HARD LIMIT: Options must be <= 100 characters
+        options = [
+            str(q["options"]["A"])[:100],
+            str(q["options"]["B"])[:100],
+            str(q["options"]["C"])[:100],
+            str(q["options"]["D"])[:100]
+        ]
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
+        
+        # 2. HARD LIMIT: Question must be <= 300 characters
+        question_text = f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}"
+        question_text = question_text[:300]
         
         self.q_start_time = datetime.datetime.now()
 
@@ -79,15 +90,18 @@ class Crucible:
                     await asyncio.sleep(1)
                 except: pass
 
-            calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
-            calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
+            # 3. HARD LIMIT: Explanation must be <= 200 characters
             ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
+            ai_explanation = ai_explanation[:195] # Safe cutoff
 
-            # Attempt 1: Send with AI Explanation and Calculator
+            # 4. Try sending WITH the calculator button first
             try:
+                calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
+                calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
+                
                 msg = await context.bot.send_poll(
                     chat_id=self.chat_id,
-                    question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
+                    question=question_text,
                     options=options,
                     type=Poll.QUIZ,
                     correct_option_id=correct_idx,
@@ -97,23 +111,23 @@ class Crucible:
                     reply_markup=calc_keyboard
                 )
             except Exception as e1:
-                logger.error(f"Poll failed with explanation: {e1}")
-                # Attempt 2: Send without explanation (in case it was too long)
+                # 5. If the calculator button fails (Telegram group restriction), send WITHOUT it
+                print(f"⚠️ Poll failed with calculator button: {e1}. Retrying without button...")
                 msg = await context.bot.send_poll(
                     chat_id=self.chat_id,
-                    question=f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}",
+                    question=question_text,
                     options=options,
                     type=Poll.QUIZ,
                     correct_option_id=correct_idx,
                     is_anonymous=False,
                     open_period=self.timer,
-                    reply_markup=calc_keyboard
+                    explanation=ai_explanation
                 )
 
             self.poll_id = msg.poll.id
-            
         except Exception as e:
-            logger.error(f"Crucible completely failed on Q{self.current_q + 1}: {e}")
+            # 6. Log the EXACT error so we can see it in Railway
+            logger.error(f"🚨 CRUCIAL POLL ERROR on Q{self.current_q + 1}: {e}")
             await context.bot.send_message(self.chat_id, f"⚠️ Skipping Q{self.current_q + 1} due to a Telegram error.")
             self.current_q += 1
             await asyncio.sleep(2)
@@ -122,7 +136,6 @@ class Crucible:
         await asyncio.sleep(self.timer)
         self.current_q += 1
         await self.send_next_poll(context)
-
     async def handle_answer(self, answer):
         if answer.poll_id != self.poll_id: return
         user = answer.user
