@@ -113,6 +113,7 @@ def main():
     app.add_handler(CommandHandler("testsiege", siege_engine.test_siege))
     app.add_handler(CommandHandler("testmelee", melee_engine.test_melee))
     app.add_handler(CommandHandler("startcrucible", crucible_engine.start_crucible_now))
+    app.add_handler(CommandHandler("stopcrucible", crucible_engine.stop_crucible_command))
 
     app.add_handler(CommandHandler("clash", duel_engine.start_clash))
     app.add_handler(CallbackQueryHandler(duel_engine.config_callback, pattern="^cfg_"))

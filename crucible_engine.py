@@ -36,7 +36,6 @@ class Crucible:
         msg = f"{title}{chr(10)}{chr(10)}Subject: {subject.title()}{chr(10)}Topic: {topic_name}{chr(10)}Timer: {self.timer}s{chr(10)}Forging {self.total_qs} questions..."
         await context.bot.send_message(self.chat_id, msg, parse_mode="Markdown")
 
-        # Fetch questions using STRICT topic pagination
         if self.is_test:
             qs_list, _ = await fetch_questions(subject=subject, topic=topic_slug, limit=self.total_qs)
             self.questions = qs_list
@@ -49,7 +48,6 @@ class Crucible:
 
         self.total_qs = len(self.questions)
         
-        # Warn if ALOC didn't have exactly 100 (prevents silent fallback)
         if self.total_qs < 100 and not self.is_test:
             await context.bot.send_message(self.chat_id, f"⚠️ <b>Note:</b> ALOC only has {self.total_qs} questions for this exact topic. Running a {self.total_qs}-question drill.", parse_mode="HTML")
         else:
@@ -75,11 +73,8 @@ class Crucible:
                     await asyncio.sleep(1)
                 except: pass
 
-            # 1. ADD CALCULATOR BUTTON
             calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
             calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
-
-            # 2. ADD AI EXPLANATION (BULB ICON)
             ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
 
             msg = await context.bot.send_poll(
@@ -90,7 +85,7 @@ class Crucible:
                 correct_option_id=correct_idx,
                 is_anonymous=False,
                 open_period=self.timer,
-                explanation=ai_explanation, # This creates the bulb icon & pop-up!
+                explanation=ai_explanation,
                 reply_markup=calc_keyboard
             )
             self.poll_id = msg.poll.id
@@ -144,6 +139,16 @@ class Crucible:
         md_table = telegram_rich.generate_native_table(final_stats, title="🏆 THE CRUCIBLE RESULTS 🏆")
         await telegram_rich.send_native_table(context.bot, self.chat_id, md_table, "CRUCIBLE RESULTS")
         if self.chat_id in ACTIVE_CRUCIBLE: del ACTIVE_CRUCIBLE[self.chat_id]
+
+# --- STOP COMMAND ---
+async def stop_crucible_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != admin_engine.ADMIN_ID: return
+    chat_id = update.effective_chat.id
+    if chat_id in ACTIVE_CRUCIBLE:
+        del ACTIVE_CRUCIBLE[chat_id]
+        await update.message.reply_text("🛑 *CRUCIBLE CANCELLED BY THE ARBITER.*", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("⚠️ No active Crucible found in this chat.")
 
 # --- SETUP WIZARD ---
 async def set_topic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -199,7 +204,6 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['wiz_topic_name'] = topic_name
             context.user_data['wiz_topic_slug'] = topic_name.lower().replace(" ", "-")
 
-        # Step 3: Select Timer (Defaults to 30s for Chemistry)
         default_s = "30" if subject == "chemistry" else "25"
         keyboard = [
             [InlineKeyboardButton("15s", callback_data="wiz_time_15"), InlineKeyboardButton("20s", callback_data="wiz_time_20")],
@@ -210,7 +214,19 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("wiz_time_"):
         timer = int(data.replace("wiz_time_", ""))
+        context.user_data['wiz_timer'] = timer
         
+        # Step 4: Start Time
+        keyboard = [
+            [InlineKeyboardButton("🚀 Start Now", callback_data="wiz_start_0")],
+            [InlineKeyboardButton("⏳ In 15 Mins", callback_data="wiz_start_15"), InlineKeyboardButton("⏳ In 30 Mins", callback_data="wiz_start_30")],
+            [InlineKeyboardButton("⏳ In 1 Hour", callback_data="wiz_start_60")]
+        ]
+        await query.edit_message_text("Step 4: When should the Crucible start?", reply_markup=InlineKeyboardMarkup(keyboard))
+
+    elif data.startswith("wiz_start_"):
+        delay_mins = int(data.replace("wiz_start_", ""))
+        timer = context.user_data.get('wiz_timer', 25)
         subj = context.user_data.get('wiz_subject')
         slug = context.user_data.get('wiz_topic_slug')
         name = context.user_data.get('wiz_topic_name')
@@ -220,13 +236,15 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_manager.set_setting("current_topic_name", name)
         db_manager.set_setting("crucible_timer", str(timer))
         
-        # Calculate Start and End Times
-        start_time = datetime.datetime.now()
-        end_time = start_time + datetime.timedelta(seconds=100 * timer)
+        # Calculate Times
+        start_time = datetime.datetime.now() + datetime.timedelta(minutes=delay_mins)
+        # 100 Questions * timer (in seconds)
+        end_time = start_time + datetime.timedelta(seconds=100 * timer) 
         start_str = start_time.strftime("%I:%M %p")
         end_str = end_time.strftime("%I:%M %p")
         
         arena_id = db_manager.get_setting("arena_chat_id")
+        
         msg = (
             f"🚨 <b>NEW CRUCIBLE CONFIGURED</b> 🚨\n\n"
             f"📚 <b>Subject:</b> {subj.title()}\n"
@@ -239,25 +257,30 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         if not arena_id:
-            return await query.edit_message_text(
-                "❌ <b>Error:</b> The Arena group is not set!\n\n"
-                "Please go to your group and type <code>/setarena</code> first, then run <code>/settopic</code> again.",
-                parse_mode="HTML"
-            )
+            return await query.edit_message_text("❌ <b>Error:</b> The Arena group is not set!\n\nPlease go to your group and type <code>/setarena</code> first.", parse_mode="HTML")
             
         try:
             await context.bot.send_message(int(arena_id), msg, parse_mode="HTML")
-            await query.edit_message_text(
-                f"✅ <b>Configuration Saved!</b>\n\nThe bot has successfully notified the Arena.\n\n"
-                f"⚔️ When you and your opponent are ready, type <code>/startcrucible</code> in the group to begin!",
-                parse_mode="HTML"
-            )
+            
+            if delay_mins == 0:
+                # Start immediately in 10 seconds
+                await query.edit_message_text("✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n⚔️ The Crucible is starting right now!", parse_mode="HTML")
+                await asyncio.sleep(3)
+                ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
+                asyncio.create_task(ACTIVE_CRUCIBLE[int(arena_id)].start(context))
+            else:
+                # Schedule it
+                await query.edit_message_text(f"✅ <b>Configuration Saved!</b>\n\nThe bot has notified the Arena.\n\n⏳ The Crucible will automatically start at {start_str}.", parse_mode="HTML")
+                
+                async def delayed_start():
+                    await asyncio.sleep(delay_mins * 60)
+                    ACTIVE_CRUCIBLE[int(arena_id)] = Crucible(int(arena_id), is_test=False)
+                    await ACTIVE_CRUCIBLE[int(arena_id)].start(context)
+                    
+                asyncio.create_task(delayed_start())
+                
         except Exception as e:
-            await query.edit_message_text(
-                f"❌ <b>Failed to send message to the group.</b>\n"
-                f"Make sure I am an Admin in the group.\nError: {e}",
-                parse_mode="HTML"
-            )
+            await query.edit_message_text(f"❌ <b>Failed to send message to the group.</b>\nError: {e}", parse_mode="HTML")
 
 async def set_general_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_manager.set_setting("current_subject", "physics")
@@ -269,14 +292,6 @@ async def set_general_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def test_crucible(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=True)
-    asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
-
-async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != admin_engine.ADMIN_ID: return
-    chat_id = update.effective_chat.id
-    if chat_id in ACTIVE_CRUCIBLE:
-        return await update.message.reply_text("⚠️ A Crucible is already running here.")
-    ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
 
 async def route_crucible_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
