@@ -68,16 +68,36 @@ class Crucible:
 
         q = self.questions[self.current_q]
         
-        # 1. HARD LIMIT: Options must be <= 100 characters
-        options = [
-            str(q["options"]["A"])[:100],
-            str(q["options"]["B"])[:100],
-            str(q["options"]["C"])[:100],
-            str(q["options"]["D"])[:100]
-        ]
+        # Check if any option is too long (> 100 chars)
+        option_lengths = [len(str(q["options"][k])) for k in ["A", "B", "C", "D"]]
+        has_long_option = any(length > 100 for length in option_lengths)
+        
+        # If options are too long, we must send the question as text first
+        if has_long_option:
+            full_text = f"❓ *Q{self.current_q + 1}/{self.total_qs}*
+
+{q['question']}
+
+"
+            for k in ["A", "B", "C", "D"]:
+                full_text += f"*{k}.* {q['options'][k]}
+"
+            await context.bot.send_message(self.chat_id, full_text[:4000], parse_mode="Markdown")
+            await asyncio.sleep(1)
+            
+            # Send a dummy poll with short options
+            options = ["Option A", "Option B", "Option C", "Option D"]
+        else:
+            options = [
+                str(q["options"]["A"])[:100],
+                str(q["options"]["B"])[:100],
+                str(q["options"]["C"])[:100],
+                str(q["options"]["D"])[:100]
+            ]
+            
         correct_idx = ["A", "B", "C", "D"].index(q["correct"])
         
-        # 2. HARD LIMIT: Question must be <= 300 characters
+        # Limit question text length
         question_text = f"Q{self.current_q + 1}/{self.total_qs}: {q['question']}"
         question_text = question_text[:300]
         
@@ -90,15 +110,14 @@ class Crucible:
                     await asyncio.sleep(1)
                 except: pass
 
-            # 3. HARD LIMIT: Explanation must be <= 200 characters
             ai_explanation = await get_explanation_async(q['question'], q['correct'], q['options'])
-            ai_explanation = ai_explanation[:195] # Safe cutoff
+            ai_explanation = ai_explanation[:195] 
 
-            # 4. Try sending WITH the calculator button first
+            # Calculator Button (Restored)
+            calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
+            calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
+
             try:
-                calc_btn = InlineKeyboardButton(text="🧮 Calculator", web_app=WebAppInfo(url=CALCULATOR_URL))
-                calc_keyboard = InlineKeyboardMarkup([[calc_btn]])
-                
                 msg = await context.bot.send_poll(
                     chat_id=self.chat_id,
                     question=question_text,
@@ -111,8 +130,7 @@ class Crucible:
                     reply_markup=calc_keyboard
                 )
             except Exception as e1:
-                # 5. If the calculator button fails (Telegram group restriction), send WITHOUT it
-                print(f"⚠️ Poll failed with calculator button: {e1}. Retrying without button...")
+                print(f"⚠️ Poll failed with calculator: {e1}. Retrying without...")
                 msg = await context.bot.send_poll(
                     chat_id=self.chat_id,
                     question=question_text,
@@ -126,8 +144,7 @@ class Crucible:
 
             self.poll_id = msg.poll.id
         except Exception as e:
-            # 6. Log the EXACT error so we can see it in Railway
-            logger.error(f"🚨 CRUCIAL POLL ERROR on Q{self.current_q + 1}: {e}")
+            logger.error(f"🚨 CRUCIAL POLL ERROR: {e}")
             await context.bot.send_message(self.chat_id, f"⚠️ Skipping Q{self.current_q + 1} due to a Telegram error.")
             self.current_q += 1
             await asyncio.sleep(2)
@@ -376,6 +393,12 @@ async def start_crucible_now(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if update.effective_user.id != admin_engine.ADMIN_ID: return
     chat_id = update.effective_chat.id
     if chat_id in ACTIVE_CRUCIBLE:
-        return await update.message.reply_text("⚠️ A Crucible is already running here.")
+        return await update.message.reply_text("⚠️ A Crucible is already running here. Type /stopcrucible to end it first.")
+    
+    # Check if a Clash or CBT is running
+    import duel_engine
+    if chat_id in duel_engine.ACTIVE_DUELS:
+        return await update.message.reply_text("⚠️ A Clash is currently active in this group. Please wait for it to end.")
+        
     ACTIVE_CRUCIBLE[chat_id] = Crucible(chat_id, is_test=False)
     asyncio.create_task(ACTIVE_CRUCIBLE[chat_id].start(context))
