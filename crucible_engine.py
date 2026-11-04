@@ -1,3 +1,4 @@
+import pytz
 import asyncio
 import logging
 import datetime
@@ -43,7 +44,12 @@ class Crucible:
             self.questions = await fetch_bulk_questions(subject=subject, topic=topic_slug, total_needed=self.total_qs)
 
         if not self.questions:
-            await context.bot.send_message(self.chat_id, "❌ Failed to load questions. ALOC has 0 questions for this topic.")
+            print(f"⚠️ ALOC returned 0 questions for {topic_slug}. Falling back to General {subject}.")
+            await context.bot.send_message(self.chat_id, f"⚠️ ALOC has 0 questions for the slug <code>{topic_slug}</code>. Falling back to General {subject.title()} questions.", parse_mode="HTML")
+            self.questions = await fetch_bulk_questions(subject=subject, total_needed=self.total_qs)
+            
+        if not self.questions:
+            await context.bot.send_message(self.chat_id, "❌ ALOC API is completely down or has no questions. Please try again later.")
             return await self.end_crucible(context)
 
         self.total_qs = len(self.questions)
@@ -202,7 +208,10 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             topics = SUBJECT_TOPICS_CACHE.get(subject, [])
             topic_name = topics[int(index)]
             context.user_data['wiz_topic_name'] = topic_name
-            context.user_data['wiz_topic_slug'] = topic_name.lower().replace(" ", "-")
+            import re as regex
+            # Clean the topic name: lowercase, replace spaces/special chars with single hyphen
+            clean_topic = regex.sub(r'[^a-z0-9]+', '-', topic_name.lower()).strip('-')
+            context.user_data['wiz_topic_slug'] = clean_topic
 
         default_s = "30" if subject == "chemistry" else "25"
         keyboard = [
