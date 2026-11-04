@@ -5,7 +5,7 @@ import datetime
 import json
 from telegram import Update, Poll, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ContextTypes
-from aloc_manager import fetch_questions, fetch_bulk_questions
+from aloc_manager import fetch_questions, fetch_bulk_questions, fetch_topics
 import db_manager
 import telegram_rich
 import admin_engine
@@ -208,10 +208,15 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             topics = SUBJECT_TOPICS_CACHE.get(subject, [])
             topic_name = topics[int(index)]
             context.user_data['wiz_topic_name'] = topic_name
-            import re as regex
-            # Clean the topic name: lowercase, replace spaces/special chars with single hyphen
-            clean_topic = regex.sub(r'[^a-z0-9]+', '-', topic_name.lower()).strip('-')
-            context.user_data['wiz_topic_slug'] = clean_topic
+            
+            # Fetch the exact slug from the API
+            api_topics = await fetch_topics(subject)
+            real_slug = "general"
+            for t in api_topics:
+                if t.get('displayName') == topic_name or t.get('name') == topic_name:
+                    real_slug = t.get('name')
+                    break
+            context.user_data['wiz_topic_slug'] = real_slug
 
         default_s = "30" if subject == "chemistry" else "25"
         keyboard = [
@@ -246,7 +251,8 @@ async def wizard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_manager.set_setting("crucible_timer", str(timer))
         
         # Calculate Times
-        start_time = datetime.datetime.now() + datetime.timedelta(minutes=delay_mins)
+        lagos_tz = pytz.timezone('Africa/Lagos')
+        start_time = datetime.datetime.now(lagos_tz) + datetime.timedelta(minutes=delay_mins)
         # 100 Questions * timer (in seconds)
         end_time = start_time + datetime.timedelta(seconds=100 * timer) 
         start_str = start_time.strftime("%I:%M %p")

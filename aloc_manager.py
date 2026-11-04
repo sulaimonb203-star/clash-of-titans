@@ -79,3 +79,41 @@ async def fetch_bulk_questions(subject: str = None, topic: str = None, total_nee
 
     print(f"🔍 Strict Fetch: Requested {total_needed} for '{topic}', Found {len(all_questions)}.")
     return all_questions
+
+async def fetch_topics(subject: str) -> list[dict]:
+    """Fetches the official topic taxonomy (including subtopics) from the ALOC API."""
+    api_key = os.getenv("ALOC_API_KEY")
+    if not api_key: return []
+        
+    headers = {"X-API-Key": api_key, "Accept": "application/json"}
+    subject_variants = [subject.lower(), f"general-{subject.lower()}"]
+    
+    for subj_slug in subject_variants:
+        url = f"https://dev.aloc.com.ng/api/v1/subjects/{subj_slug}/topics"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=headers)
+                if response.status_code == 200:
+                    data = response.json().get("data", [])
+                    if data:
+                        all_topics = []
+                        for topic in data:
+                            # Add the main topic
+                            all_topics.append({
+                                "name": topic.get("name"),
+                                "displayName": topic.get("displayName"),
+                                "questionCount": topic.get("questionCount", 0)
+                            })
+                            # Add all subtopics
+                            for sub in topic.get("subtopics", []):
+                                all_topics.append({
+                                    "name": sub.get("name"),
+                                    "displayName": f"{topic.get('displayName')} - {sub.get('displayName')}",
+                                    "questionCount": sub.get("questionCount", 0)
+                                })
+                        print(f"✅ Found {len(all_topics)} topics/subtopics for {subj_slug}")
+                        return all_topics
+        except Exception as e:
+            logger.error(f"Error fetching topics for {subj_slug}: {e}")
+    
+    return []
